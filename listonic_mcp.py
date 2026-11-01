@@ -146,11 +146,8 @@ def _fmt_items(items: list[dict]) -> str:
     out = []
     for item in items:
         checked = "[x]" if str(item.get("Checked")) == "1" else "[ ]"
-        amount = item.get("Amount", "")
-        unit = item.get("Unit", "")
-        out.append(
-            f"{checked} (ItemID: {item.get('Id', '')}) {amount} {unit} {item.get('Name', '')}".strip()
-        )
+        what = " ".join(filter(None, (item.get("Amount"), item.get("Unit"), item.get("Name"))))
+        out.append(f"{checked} (ItemID: {item.get('Id', '')}) {what}")
     return "\n".join(out)
 
 
