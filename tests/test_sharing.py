@@ -71,3 +71,14 @@ def test_create_share_link(client, api):
     api.replies += [FakeResponse(200, LISTS), FakeResponse(200, "https://button.listonic.com/share/abc")]
     assert sharing.create_share_link("41") == "Share link for 'BBQ': https://button.listonic.com/share/abc"
     assert api.requests()[-1] == ("POST", "/linkshares/41", None)
+
+
+def test_members_exclude_the_owner_and_removed_people(client, api):
+    """Real API: Shares also lists the owner (Owner=1) and ex-members (Deleted=1)."""
+    owner = {"Email": "me@example.com", "Display": "Me", "Username": "me", "Owner": 1}
+    gone = {"Email": "old@example.com", "Display": "Old", "Username": "old", "Deleted": 1}
+    api.replies += [FakeResponse(200, LISTS), FakeResponse(200, {"Shares": [owner]})]
+    assert sharing.get_list_members("41") == "'BBQ' is private — not shared with anyone."
+    api.replies += [FakeResponse(200, LISTS), FakeResponse(200, {"Shares": [owner, gone, MEMBER]})]
+    out = sharing.get_list_members("41")
+    assert "Jane" in out and "Me" not in out and "Old" not in out

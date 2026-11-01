@@ -131,9 +131,10 @@ class ListonicClient:
         return self.request("GET", "/friends").json() or []
 
     def list_shares(self, list_id: str) -> list[dict]:
-        """People the list is shared with (the list's ``Shares``)."""
+        """People the list is shared with. The API's ``Shares`` also holds the owner
+        (``Owner: 1``) and former members (``Deleted: 1``); neither is a current member."""
         resp = self.request("GET", f"/lists/{list_id}?includeShares=true").json() or {}
-        return resp.get("Shares") or []
+        return [m for m in resp.get("Shares") or [] if not m.get("Owner") and not m.get("Deleted")]
 
     def share_list(self, list_id: str, email: str, display: str = "") -> dict:
         """Invite a person to the list; Listonic notifies them."""
