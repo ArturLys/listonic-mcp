@@ -217,7 +217,11 @@ def add_items(items: list[AddItemParams], list_id: str = "") -> str:
         try:
             client.request(
                 "POST", f"/lists/{lid}/items",
-                json={"name": item.name, "quantity": item.quantity, "unit": item.unit},
+                json={
+                    "Name": item.name, "Description": "", "Amount": item.quantity,
+                    "Unit": item.unit, "SortOrder": 0, "Price": 0.0,
+                    "CreatorUsername": "", "Checked": 0, "Deleted": 0, "Url": "",
+                },
             )
             results.append(f"Added '{item.name}'.")
         except requests.exceptions.RequestException as e:
@@ -253,11 +257,11 @@ def edit_items(items: list[EditItemParams], list_id: str = "") -> str:
             continue
         data = {}
         if item.is_checked is not None:
-            data["isChecked"] = item.is_checked
+            data["Checked"] = int(item.is_checked)
         if item.name is not None:
-            data["name"] = item.name
+            data["Name"] = item.name
         if item.quantity is not None:
-            data["quantity"] = item.quantity
+            data["Amount"] = item.quantity
         if not data:
             results.append(f"No changes given for item {item.item_id}.")
             continue
