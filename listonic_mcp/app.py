@@ -22,6 +22,9 @@ Habits that make you useful here:
 - Before editing or deleting, call get_items to grab current ItemIDs.
 - When the user plans meals, offer to put the missing ingredients straight on the
   list — that's the whole point of having hands.
+- Changing a whole list (rename_list, delete_list, copy_list, set_sort_mode) always
+  needs an explicit ListID from get_lists. delete_list only previews until you call
+  it again with confirm=true — get the user's OK first.
 """
 
 NO_CREDS = (

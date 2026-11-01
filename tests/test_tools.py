@@ -10,6 +10,11 @@ from listonic_mcp.tools import items, lists
 EXPECTED = {
     # name: (readOnly, destructive, idempotent)
     "get_lists": (True, False, True),
+    "create_list": (False, False, False),
+    "rename_list": (False, False, True),
+    "delete_list": (False, True, True),
+    "copy_list": (False, False, False),
+    "set_sort_mode": (False, False, True),
     "get_items": (True, False, True),
     "add_items": (False, False, False),
     "edit_items": (False, False, True),
@@ -109,3 +114,86 @@ def test_delete_items_error_propagates(client, api):
 def test_get_lists_marks_default(client, api):
     api.replies.append(FakeResponse(200, [{"Id": 41, "Name": "BBQ"}, {"Id": 42, "Name": "Home"}]))
     assert lists.get_lists() == "(ListID: 41) BBQ\n(ListID: 42) Home  ← default"
+
+
+# -- list-level tools ---------------------------------------------------------
+
+LISTS = [{"Id": 41, "Name": "BBQ", "ItemsCount": 3, "SortOrder": 1},
+         {"Id": 42, "Name": "Home", "ItemsCount": 0, "SortOrder": 4}]
+
+
+def test_create_list_orders_after_existing_lists(client, api):
+    api.replies += [FakeResponse(200, LISTS), FakeResponse(201, {"Id": "99", "Name": "Party"})]
+    assert lists.create_list(" Party ") == "Created 'Party' (ListID: 99)."
+    _, (method, path, body) = api.requests()
+    assert (method, path) == ("POST", "/lists")
+    assert body == {"Name": "Party", "Active": 1, "SortMode": 0, "SortOrder": 5, "Shares": [], "Items": []}
+
+
+def test_blank_list_name_is_rejected(client, api):
+    with pytest.raises(ValueError, match="empty"):
+        lists.create_list("  ")
+    assert api.requests() == []
+
+
+def test_rename_list(client, api):
+    api.replies.append(FakeResponse(200, LISTS))
+    assert lists.rename_list("41", "Garden party") == "Renamed 'BBQ' to 'Garden party'."
+    assert api.requests()[-1] == ("PATCH", "/lists/41", {"Name": "Garden party"})
+
+
+def test_unknown_list_id_is_a_clear_error_and_writes_nothing(client, api):
+    api.replies.append(FakeResponse(200, LISTS))
+    with pytest.raises(ValueError, match="No list with ListID '7'"):
+        lists.rename_list("7", "x")
+    assert [r[0] for r in api.requests()] == ["GET"]
+
+
+def test_delete_list_only_previews_without_confirm(client, api):
+    api.replies.append(FakeResponse(200, LISTS))
+    out = lists.delete_list("41")
+    assert "Not deleted yet" in out and "'BBQ' (3 items)" in out
+    assert [r[0] for r in api.requests()] == ["GET"]
+
+
+def test_delete_list_with_confirm_deactivates_it(client, api):
+    api.replies.append(FakeResponse(200, LISTS))
+    assert lists.delete_list("41", confirm=True) == "Deleted the list 'BBQ' (3 items)."
+    assert api.requests()[-1] == ("PATCH", "/lists/41", {"Active": 0})
+
+
+def test_set_sort_mode(client, api):
+    api.replies.append(FakeResponse(200, LISTS))
+    assert lists.set_sort_mode("42", "alphabetical") == "'Home' is now sorted alphabetical."
+    assert api.requests()[-1] == ("PATCH", "/lists/42", {"SortMode": 1})
+
+
+def test_set_sort_mode_rejects_unsupported_mode_at_the_schema():
+    with pytest.raises(Exception):
+        asyncio.run(app.mcp.call_tool("set_sort_mode", {"list_id": "1", "mode": "custom"}))
+
+
+def test_copy_list_copies_selected_items_unchecked(client, api):
+    api.replies += [
+        FakeResponse(200, LISTS),                                            # _find_list
+        FakeResponse(200, [                                                  # source items
+            {"Id": "1", "Name": "mleko", "Amount": "2", "Unit": "l", "Checked": 0, "Description": "UHT"},
+            {"Id": "2", "Name": "chleb", "Amount": "1", "Unit": "", "Checked": 1},
+        ]),
+        FakeResponse(200, LISTS),                                            # create_list ordering
+        FakeResponse(201, {"Id": "99", "Name": "BBQ - copy"}),               # create_list
+    ]
+    out = lists.copy_list("41", items="unpurchased")
+    assert out == "Copied 1 item(s) from 'BBQ' into 'BBQ - copy' (ListID: 99)."
+    *_, (method, path, body) = api.requests()
+    assert (method, path) == ("POST", "/lists/99/items")
+    assert (body["Name"], body["Amount"], body["Unit"], body["Description"], body["Checked"]) == ("mleko", "2", "l", "UHT", 0)
+
+
+def test_copy_list_reports_failed_items(client, api):
+    api.replies += [
+        FakeResponse(200, LISTS), FakeResponse(200, [{"Id": "1", "Name": "a", "Checked": 0}]),
+        FakeResponse(200, LISTS), FakeResponse(201, {"Id": "99", "Name": "Copy"}), FakeResponse(500),
+    ]
+    out = lists.copy_list("41", name="Copy")
+    assert out.endswith("1 item(s) failed to copy.") and out.startswith("Copied 0 item(s)")

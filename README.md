@@ -89,12 +89,17 @@ What's on my grocery list? Check off the milk, I just bought it.
 | Tool           | What it does                                                              |
 | -------------- | ------------------------------------------------------------------------- |
 | `get_lists`    | All your shopping lists with their ids.                                    |
+| `create_list`  | Create a new empty list.                                                   |
+| `rename_list`  | Rename a list.                                                             |
+| `copy_list`    | Copy a list (all / unpurchased / purchased items) into a new one.          |
+| `set_sort_mode`| Sort a list by categories or alphabetically.                               |
+| `delete_list`  | Remove a list. Previews first; needs `confirm=true` to act.                |
 | `get_items`    | Items on a list — checked (already have) vs unchecked (to buy).            |
 | `add_items`    | Add one or many items in a single call (name, quantity, unit, note).       |
 | `edit_items`   | Check/uncheck, rename, change quantity/unit/note — batched.                |
 | `delete_items` | Remove items entirely.                                                     |
 
-Every tool takes an optional `list_id`, so multiple lists ("weekend BBQ", "pharmacy") work naturally.
+Item tools take an optional `list_id` (default list when omitted), so multiple lists ("weekend BBQ", "pharmacy") work naturally. Tools that change a whole list always need an explicit `list_id`.
 
 ## Good to know
 

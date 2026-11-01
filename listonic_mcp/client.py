@@ -73,6 +73,19 @@ class ListonicClient:
         resp = self.request("GET", "/lists?includeShares=false&archive=false&includeItems=false")
         return resp.json() or []
 
+    def create_list(self, name: str) -> dict:
+        """New empty list, ordered after the existing ones (the app sends max+1)."""
+        body = {
+            "Name": name, "Active": 1, "SortMode": 0,
+            "SortOrder": max((l.get("SortOrder") or 0 for l in self.lists()), default=-1) + 1,
+            "Shares": [], "Items": [],
+        }
+        return self.request("POST", "/lists", json=body).json()
+
+    def update_list(self, list_id: str, **fields) -> None:
+        """Partial update: Name, SortMode (0 categories, 1 alphabetical) or Active (0 = removed)."""
+        self.request("PATCH", f"/lists/{list_id}", json=fields)
+
     def default_list_id(self) -> str:
         """The pinned --list-id if given, else the account's first list."""
         if self._pinned_list_id:
