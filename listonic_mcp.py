@@ -147,7 +147,10 @@ def _fmt_items(items: list[dict]) -> str:
     for item in items:
         checked = "[x]" if str(item.get("Checked")) == "1" else "[ ]"
         what = " ".join(filter(None, (item.get("Amount"), item.get("Unit"), item.get("Name"))))
-        out.append(f"{checked} (ItemID: {item.get('Id', '')}) {what}")
+        line = f"{checked} (ItemID: {item.get('Id', '')}) {what}"
+        if item.get("Description"):
+            line += f" — {item['Description']}"
+        out.append(line)
     return "\n".join(out)
 
 
@@ -193,6 +196,7 @@ class AddItemParams(BaseModel):
     name: str = Field(description="The name of the item to add")
     quantity: str = Field(default="1", description="The quantity of the item")
     unit: str = Field(default="", description="The unit (e.g. 'kg', 'liters', 'pieces')")
+    note: str = Field(default="", description="Optional note shown under the item")
 
 
 @mcp.tool()
@@ -215,7 +219,7 @@ def add_items(items: list[AddItemParams], list_id: str = "") -> str:
             client.request(
                 "POST", f"/lists/{lid}/items",
                 json={
-                    "Name": item.name, "Description": "", "Amount": item.quantity,
+                    "Name": item.name, "Description": item.note, "Amount": item.quantity,
                     "Unit": item.unit, "SortOrder": 0, "Price": 0.0,
                     "CreatorUsername": "", "Checked": 0, "Deleted": 0, "Url": "",
                 },
@@ -233,6 +237,8 @@ class EditItemParams(BaseModel):
     )
     name: str | None = Field(default=None, description="New name for the item")
     quantity: str | None = Field(default=None, description="New quantity")
+    unit: str | None = Field(default=None, description="New unit")
+    note: str | None = Field(default=None, description="New note (empty string clears it)")
 
 
 @mcp.tool()
@@ -259,6 +265,10 @@ def edit_items(items: list[EditItemParams], list_id: str = "") -> str:
             data["Name"] = item.name
         if item.quantity is not None:
             data["Amount"] = item.quantity
+        if item.unit is not None:
+            data["Unit"] = item.unit
+        if item.note is not None:
+            data["Description"] = item.note
         if not data:
             results.append(f"No changes given for item {item.item_id}.")
             continue
