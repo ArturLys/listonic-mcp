@@ -8,18 +8,9 @@ from typing import Literal
 
 import requests
 
-from ..app import get_client, tool
-from ..client import ListonicClient
+from ..app import find_list, get_client, tool
 
 SORT_MODES = {"categories": 0, "alphabetical": 1}
-
-
-def _find_list(client: ListonicClient, list_id: str) -> dict:
-    list_id = list_id.strip()
-    for l in client.lists():
-        if str(l.get("Id")) == list_id:
-            return l
-    raise ValueError(f"No list with ListID {list_id!r} — call get_lists for the ids.")
 
 
 def _name(name: str) -> str:
@@ -69,7 +60,7 @@ def rename_list(list_id: str, name: str) -> str:
         name: the new name.
     """
     client = get_client()
-    old = _find_list(client, list_id)
+    old = find_list(client, list_id)
     client.update_list(list_id.strip(), Name=_name(name))
     return f"Renamed '{old.get('Name')}' to '{name.strip()}'."
 
@@ -85,7 +76,7 @@ def delete_list(list_id: str, confirm: bool = False) -> str:
         confirm: must be true to actually remove it.
     """
     client = get_client()
-    target = _find_list(client, list_id)
+    target = find_list(client, list_id)
     summary = f"'{target.get('Name')}' ({target.get('ItemsCount', '?')} items)"
     if not confirm:
         return (f"Not deleted yet. This would remove the list {summary}. "
@@ -109,7 +100,7 @@ def copy_list(
         items: which items to copy — all, only unpurchased (unchecked) or only purchased (checked).
     """
     client = get_client()
-    source = _find_list(client, list_id)
+    source = find_list(client, list_id)
     wanted = {"all": None, "unpurchased": "0", "purchased": "1"}[items]
     to_copy = [
         i for i in client.items(list_id.strip())
@@ -137,6 +128,6 @@ def set_sort_mode(list_id: str, mode: Literal["categories", "alphabetical"]) -> 
         mode: "categories" (grouped by store aisle) or "alphabetical".
     """
     client = get_client()
-    target = _find_list(client, list_id)
+    target = find_list(client, list_id)
     client.update_list(list_id.strip(), SortMode=SORT_MODES[mode])
     return f"'{target.get('Name')}' is now sorted {mode}."

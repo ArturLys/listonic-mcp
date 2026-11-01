@@ -22,6 +22,11 @@ EXPECTED = {
     "check_all": (False, False, True),
     "uncheck_all": (False, False, True),
     "delete_checked": (False, True, True),
+    "get_friends": (True, False, True),
+    "get_list_members": (True, False, True),
+    "share_list": (False, False, False),
+    "unshare_list": (False, True, True),
+    "create_share_link": (False, False, False),
 }
 
 
@@ -234,3 +239,13 @@ def test_delete_checked_with_nothing_checked_is_a_noop(client, api):
     api.replies.append(FakeResponse(200, [MIXED[0]]))
     assert items.delete_checked(confirm=True) == "No checked items to delete."
     assert [r[0] for r in api.requests()] == ["GET"]
+
+
+def test_a_fresh_server_registers_every_tool():
+    """Guards tools/__init__.py: a module that tests import directly but the server
+    never imports would otherwise pass unnoticed."""
+    import subprocess, sys
+    code = ("import asyncio, listonic_mcp.cli as c; "
+            "print(*sorted(t.name for t in asyncio.run(c.mcp.list_tools())))")
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True).stdout
+    assert out.split() == sorted(EXPECTED)

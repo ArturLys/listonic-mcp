@@ -124,3 +124,25 @@ class ListonicClient:
     def delete_items(self, list_id: str, item_ids: list[str]) -> None:
         """One request for any number of items (what the app does for 'delete purchased')."""
         self.request("DELETE", f"/lists/{list_id}/multipleitems", json=list(item_ids))
+
+    # -- sharing -----------------------------------------------------------
+
+    def friends(self) -> list[dict]:
+        return self.request("GET", "/friends").json() or []
+
+    def list_shares(self, list_id: str) -> list[dict]:
+        """People the list is shared with (the list's ``Shares``)."""
+        resp = self.request("GET", f"/lists/{list_id}?includeShares=true").json() or {}
+        return resp.get("Shares") or []
+
+    def share_list(self, list_id: str, email: str, display: str = "") -> dict:
+        """Invite a person to the list; Listonic notifies them."""
+        body = {"Waiting": 0, "Email": email, "Username": "", "Display": display,
+                "Owner": 0, "ImageUrl": "", "Deleted": 0, "Url": ""}
+        return self.request("POST", f"/lists/{list_id}/shares", json=body).json()
+
+    def unshare_list(self, list_id: str, username: str) -> None:
+        self.request("DELETE", f"/lists/{list_id}/shares/{username}")
+
+    def create_share_link(self, list_id: str) -> str:
+        return self.request("POST", f"/linkshares/{list_id}").json()

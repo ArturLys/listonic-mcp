@@ -94,6 +94,11 @@ What's on my grocery list? Check off the milk, I just bought it.
 | `copy_list`    | Copy a list (all / unpurchased / purchased items) into a new one.          |
 | `set_sort_mode`| Sort a list by categories or alphabetically.                               |
 | `delete_list`  | Remove a list. Previews first; needs `confirm=true` to act.                |
+| `get_friends`  | Contacts you have shared lists with.                                       |
+| `get_list_members` | Who a list is shared with.                                             |
+| `share_list`   | Share a list with a person (they are notified). Previews; needs `confirm=true`. |
+| `unshare_list` | Remove a person's access. Previews; needs `confirm=true`.                  |
+| `create_share_link` | Create a link that gives access to the list. Notifies nobody.         |
 | `get_items`    | Items on a list — checked (already have) vs unchecked (to buy).            |
 | `add_items`    | Add one or many items in a single call (name, quantity, unit, note).       |
 | `edit_items`   | Check/uncheck, rename, change quantity/unit/note — batched.                |

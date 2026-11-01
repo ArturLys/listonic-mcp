@@ -24,6 +24,8 @@ Habits that make you useful here:
   list — that's the whole point of having hands.
 - delete_checked previews until you call it again with confirm=true — show the user
   which items would go first.
+- share_list and unshare_list affect another person: they preview first, so show the
+  user who would be notified or lose access and wait for their OK before confirm=true.
 - Changing a whole list (rename_list, delete_list, copy_list, set_sort_mode) always
   needs an explicit ListID from get_lists. delete_list only previews until you call
   it again with confirm=true — get the user's OK first.
@@ -58,6 +60,15 @@ def resolve_list(list_id: str = "") -> tuple[ListonicClient, str]:
     """Client + the list to act on: ``list_id`` if given, else the default list."""
     client = get_client()
     return client, list_id.strip() or client.default_list_id()
+
+
+def find_list(client: ListonicClient, list_id: str) -> dict:
+    """The account's list with this id, or a clear error before anything is written."""
+    list_id = list_id.strip()
+    for l in client.lists():
+        if str(l.get("Id")) == list_id:
+            return l
+    raise ValueError(f"No list with ListID {list_id!r} — call get_lists for the ids.")
 
 
 def tool(title: str, *, read_only: bool = False, destructive: bool = False,
