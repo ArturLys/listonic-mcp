@@ -90,8 +90,8 @@ What's on my grocery list? Check off the milk, I just bought it.
 | -------------- | ------------------------------------------------------------------------- |
 | `get_lists`    | All your shopping lists with their ids.                                    |
 | `get_items`    | Items on a list — checked (already have) vs unchecked (to buy).            |
-| `add_items`    | Add one or many items in a single call (name, quantity, unit).             |
-| `edit_items`   | Check/uncheck, rename, or re-quantity items — batched.                     |
+| `add_items`    | Add one or many items in a single call (name, quantity, unit, note).       |
+| `edit_items`   | Check/uncheck, rename, change quantity/unit/note — batched.                |
 | `delete_items` | Remove items entirely.                                                     |
 
 Every tool takes an optional `list_id`, so multiple lists ("weekend BBQ", "pharmacy") work naturally.
