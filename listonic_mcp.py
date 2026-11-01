@@ -284,14 +284,10 @@ def delete_items(item_ids: list[str], list_id: str = "") -> str:
     if client is None:
         return _NO_CREDS
     lid = list_id.strip() or client.default_list_id()
-    results = []
-    for item_id in item_ids:
-        try:
-            client.request("DELETE", f"/lists/{lid}/items/{item_id}")
-            results.append(f"Deleted item {item_id}.")
-        except requests.exceptions.RequestException as e:
-            results.append(f"Failed to delete item {item_id}: {e}")
-    return "\n".join(results)
+    if not item_ids:
+        return "No item_ids given."
+    client.request("DELETE", f"/lists/{lid}/multipleitems", json=list(item_ids))
+    return f"Deleted {len(item_ids)} item(s)."
 
 
 def _parse_args() -> argparse.Namespace:
