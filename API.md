@@ -223,6 +223,17 @@ Partial update; send only changed fields:
 ### Copy List
 No dedicated endpoint: the app creates a new list with `POST /api/lists` (same body as Create List, e.g. `"Name": "<name> - copy"`, copying `SortMode` and next `SortOrder`).
 
+### Verified Behaviour
+Exercised end to end against a real account (create, items add/edit/check/delete,
+check-all, batched delete, rename, `SortMode` 0 and 1, copy, `Active: 0`, share link):
+all of the calls below work as documented. Details learned along the way:
+- `GET /api/lists/{listId}?includeShares=true` returns `Shares`: an array that also
+  contains the owner (`"Owner": 1`) and former members (`"Deleted": 1`). A private
+  list therefore has one entry, the owner. Members are the entries with neither flag.
+- Entries have `Email`, `Username`, `Display`, `ImageUrl`, `Id`, `Url`.
+- A list with `Active: 0` no longer appears in `GET /api/lists?archive=false`.
+- `SortMode: 2` (custom) was never sent, so it stays unverified.
+
 ### Mark List Opened
 ```
 POST /api/lists/{listId}/opened
