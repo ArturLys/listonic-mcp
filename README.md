@@ -98,6 +98,9 @@ What's on my grocery list? Check off the milk, I just bought it.
 | `add_items`    | Add one or many items in a single call (name, quantity, unit, note).       |
 | `edit_items`   | Check/uncheck, rename, change quantity/unit/note — batched.                |
 | `delete_items` | Remove items entirely.                                                     |
+| `check_all`    | Check off every item (finished shopping).                                  |
+| `uncheck_all`  | Uncheck every item — all 'to buy' again.                                   |
+| `delete_checked` | Delete all purchased items. Previews first; needs `confirm=true`.        |
 
 Item tools take an optional `list_id` (default list when omitted), so multiple lists ("weekend BBQ", "pharmacy") work naturally. Tools that change a whole list always need an explicit `list_id`.
 

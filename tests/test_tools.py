@@ -19,6 +19,9 @@ EXPECTED = {
     "add_items": (False, False, False),
     "edit_items": (False, False, True),
     "delete_items": (False, True, True),
+    "check_all": (False, False, True),
+    "uncheck_all": (False, False, True),
+    "delete_checked": (False, True, True),
 }
 
 
@@ -197,3 +200,37 @@ def test_copy_list_reports_failed_items(client, api):
     ]
     out = lists.copy_list("41", name="Copy")
     assert out.endswith("1 item(s) failed to copy.") and out.startswith("Copied 0 item(s)")
+
+
+# -- bulk item tools ----------------------------------------------------------
+
+def test_check_all_and_uncheck_all_use_checkall_direction(client, api):
+    assert items.check_all() == "All items checked off."
+    assert items.uncheck_all(list_id="7") == "All items unchecked."
+    assert api.requests() == [
+        ("POST", "/lists/42/items/checkall?direction=true", None),
+        ("POST", "/lists/7/items/checkall?direction=false", None),
+    ]
+
+
+MIXED = [{"Id": "1", "Name": "mleko", "Checked": 0}, {"Id": "2", "Name": "chleb", "Checked": 1},
+         {"Id": 3, "Name": "ser", "Checked": 1}]
+
+
+def test_delete_checked_previews_without_confirm(client, api):
+    api.replies.append(FakeResponse(200, MIXED))
+    out = items.delete_checked()
+    assert "Not deleted yet" in out and "2 checked" in out and "chleb" in out and "mleko" not in out
+    assert [r[0] for r in api.requests()] == ["GET"]
+
+
+def test_delete_checked_with_confirm_deletes_only_checked_in_one_request(client, api):
+    api.replies.append(FakeResponse(200, MIXED))
+    assert items.delete_checked(confirm=True) == "Deleted 2 checked item(s)."
+    assert api.requests()[-1] == ("DELETE", "/lists/42/multipleitems", ["2", "3"])
+
+
+def test_delete_checked_with_nothing_checked_is_a_noop(client, api):
+    api.replies.append(FakeResponse(200, [MIXED[0]]))
+    assert items.delete_checked(confirm=True) == "No checked items to delete."
+    assert [r[0] for r in api.requests()] == ["GET"]

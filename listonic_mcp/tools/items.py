@@ -121,3 +121,49 @@ def delete_items(item_ids: list[str], list_id: str = "") -> str:
         return "No item_ids given."
     client.delete_items(lid, item_ids)
     return f"Deleted {len(item_ids)} item(s)."
+
+
+@tool("Check off all items", idempotent=True)
+def check_all(list_id: str = "") -> str:
+    """Check off EVERY item on the list (e.g. the user finished shopping).
+
+    Args:
+        list_id: which list (from get_lists). Empty = the default list.
+    """
+    client, lid = resolve_list(list_id)
+    client.check_all(lid, True)
+    return "All items checked off."
+
+
+@tool("Uncheck all items", idempotent=True)
+def uncheck_all(list_id: str = "") -> str:
+    """Uncheck EVERY item on the list, so it is all 'to buy' again (e.g. restocking
+    a recurring weekly list).
+
+    Args:
+        list_id: which list (from get_lists). Empty = the default list.
+    """
+    client, lid = resolve_list(list_id)
+    client.check_all(lid, False)
+    return "All items unchecked."
+
+
+@tool("Delete checked items", destructive=True, idempotent=True)
+def delete_checked(list_id: str = "", confirm: bool = False) -> str:
+    """Delete every checked (already purchased) item from the list. Without
+    confirm=true this only previews which items would go: show that to the user
+    and get their explicit OK before calling again with confirm=true.
+
+    Args:
+        list_id: which list (from get_lists). Empty = the default list.
+        confirm: must be true to actually delete.
+    """
+    client, lid = resolve_list(list_id)
+    checked = [i for i in client.items(lid) if str(i.get("Checked")) == "1"]
+    if not checked:
+        return "No checked items to delete."
+    if not confirm:
+        return (f"Not deleted yet. This would delete {len(checked)} checked item(s):\n"
+                f"{fmt_items(checked)}\nCall again with confirm=true after the user agrees.")
+    client.delete_items(lid, [str(i["Id"]) for i in checked])
+    return f"Deleted {len(checked)} checked item(s)."

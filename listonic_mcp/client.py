@@ -116,6 +116,11 @@ class ListonicClient:
         """Partial update. Fields use the API's names: Name, Amount, Unit, Description, Checked."""
         self.request("PATCH", f"/lists/{list_id}/items/{item_id}", json=fields)
 
+    def check_all(self, list_id: str, checked: bool) -> None:
+        """Check (True) or uncheck (False) every item on the list."""
+        direction = "true" if checked else "false"
+        self.request("POST", f"/lists/{list_id}/items/checkall?direction={direction}")
+
     def delete_items(self, list_id: str, item_ids: list[str]) -> None:
         """One request for any number of items (what the app does for 'delete purchased')."""
         self.request("DELETE", f"/lists/{list_id}/multipleitems", json=list(item_ids))
