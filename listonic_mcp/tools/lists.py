@@ -77,7 +77,7 @@ def delete_list(list_id: str, confirm: bool = False) -> str:
     """
     client = get_client()
     target = find_list(client, list_id)
-    summary = f"'{target.get('Name')}' ({target.get('ItemsCount', '?')} items)"
+    summary = f"'{target.get('Name')}' ({target.get('ItemsCount', '?')} item(s))"
     if not confirm:
         return (f"Not deleted yet. This would remove the list {summary}. "
                 "Call again with confirm=true after the user agrees.")

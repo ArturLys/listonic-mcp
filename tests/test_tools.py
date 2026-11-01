@@ -160,13 +160,13 @@ def test_unknown_list_id_is_a_clear_error_and_writes_nothing(client, api):
 def test_delete_list_only_previews_without_confirm(client, api):
     api.replies.append(FakeResponse(200, LISTS))
     out = lists.delete_list("41")
-    assert "Not deleted yet" in out and "'BBQ' (3 items)" in out
+    assert "Not deleted yet" in out and "'BBQ' (3 item(s))" in out
     assert [r[0] for r in api.requests()] == ["GET"]
 
 
 def test_delete_list_with_confirm_deactivates_it(client, api):
     api.replies.append(FakeResponse(200, LISTS))
-    assert lists.delete_list("41", confirm=True) == "Deleted the list 'BBQ' (3 items)."
+    assert lists.delete_list("41", confirm=True) == "Deleted the list 'BBQ' (3 item(s))."
     assert api.requests()[-1] == ("PATCH", "/lists/41", {"Active": 0})
 
 
