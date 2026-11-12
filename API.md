@@ -202,6 +202,125 @@ Returns icons for categories.
 
 ---
 
+## Additional Endpoints
+
+Same base URL and `Authorization: Bearer` header as above; bodies are JSON. Write calls return `200` with an empty body unless noted.
+
+### Update List (rename, sort, archive/delete)
+```
+PATCH /api/lists/{listId}
+```
+Partial update; send only changed fields:
+```json
+{"Name": "New name"}
+{"SortMode": 1}
+{"Active": 0}
+```
+- `SortMode`: `0` = categories, `1` = alphabetical, `2` = custom (inferred from the UI order; `2` not captured).
+- `Active: 0` is what the app sends for "Delete" on a list (soft delete, the app shows an UNDO for a few seconds before sending it).
+- The app sends settings changes only after the settings sheet is closed. Toggling "Show prices" did not produce a request in testing, so `ShowPrices` is unconfirmed.
+
+### Copy List
+No dedicated endpoint: the app creates a new list with `POST /api/lists` (same body as Create List, e.g. `"Name": "<name> - copy"`, copying `SortMode` and next `SortOrder`).
+
+### Verified Behaviour
+Exercised end to end against a real account (create, items add/edit/check/delete,
+check-all, batched delete, rename, `SortMode` 0 and 1, copy, `Active: 0`, share link):
+all of the calls below work as documented. Details learned along the way:
+- `GET /api/lists/{listId}?includeShares=true` returns `Shares`: an array that also
+  contains the owner (`"Owner": 1`) and former members (`"Deleted": 1`). A private
+  list therefore has one entry, the owner. Members are the entries with neither flag.
+- Entries have `Email`, `Username`, `Display`, `ImageUrl`, `Id`, `Url`.
+- A list with `Active: 0` no longer appears in `GET /api/lists?archive=false`.
+- `SortMode: 2` (custom) was never sent, so it stays unverified.
+
+### Mark List Opened
+```
+POST /api/lists/{listId}/opened
+```
+No body. Sent when a list is opened.
+
+### Check / Uncheck All Items
+```
+POST /api/lists/{listId}/items/checkall?direction=true
+POST /api/lists/{listId}/items/checkall?direction=false
+```
+`direction=true` checks all items, `false` unchecks them. No body.
+
+### Check a Single Item
+```
+PATCH /api/lists/{listId}/items/{itemId}
+```
+```json
+{"Checked": 1}
+```
+Item edits are partial too: the app sends only changed fields, e.g. `{"Description": "note", "Amount": "2", "Unit": "l"}`.
+
+### Delete Multiple Items
+```
+DELETE /api/lists/{listId}/multipleitems
+```
+Body is a JSON array of item ids (strings): `["11384977035"]`. Used by "Delete purchased items" (the app sends the ids of checked items). Sent after an UNDO window.
+
+### Create Share Link
+```
+POST /api/linkshares/{listId}
+```
+No body. Response is a JSON string with the link, e.g. `"https://button.listonic.com/share/<token>"`.
+
+### Share List with a Person
+```
+POST /api/lists/{listId}/shares
+```
+```json
+{"Waiting": 0, "Email": "friend@example.com", "Username": "", "Display": "Friend Name", "Owner": 0, "ImageUrl": "", "Deleted": 0, "Url": ""}
+```
+**Response**: 201 with the share. `Id` is `{listId}::{username}`:
+```json
+{"Email":"friend@example.com","Username":"google_abc123","Display":"Friend Name","ImageUrl":"","Id":"12345678::google_abc123","Url":"/api/lists/12345678/shares/google_abc123"}
+```
+The app takes `Email`/`Display` from `GET /api/friends` (or a typed email) and leaves `Username` empty. The person is notified. The app shows an UNDO for a few seconds, so any delay is client-side.
+
+### Remove a Share (Remove member)
+```
+DELETE /api/lists/{listId}/shares/{username}
+```
+`{username}` is the `Username` from the share (e.g. `google_abc123`). No body, `200` on success. The shared list is visible in `GET /api/lists/{listId}?includeShares=true`.
+
+### Friends (sharing contacts)
+```
+GET /api/friends
+```
+```json
+[{"Email":"a@example.com","Username":"google_x","DisplayName":"Name","OnlyEmail":false,"Counter":26,"ImageUrl":"","Id":"1234567","Url":"/api/friends/1234567"}]
+```
+Sharing with a person was not exercised (it would notify them).
+
+### Sync
+```
+GET /api/syncconfiguration
+GET /api/lists/{listId}/deepsync?version={ItemsLastVersion}&hash={sha256}
+```
+- `syncconfiguration` returns polling intervals (`ShallowSyncLiveIntervalInSeconds`, `ShallowSyncIdleIntervalInSeconds`, `DeepSyncIntervalInSeconds`).
+- `deepsync` returns `{"HasChanges": false, "IsHashMissmatch": false}`. `version` is the list's `ItemsLastVersion`; `hash` is SHA-256 of the item state (the empty-list hash `e3b0c442...b855` is SHA-256 of an empty string).
+
+### Read-only Endpoints
+| Endpoint | Notes |
+|---|---|
+| `GET /api/lists?archive=false&includeItems=...` | `archive=true` returns archived lists |
+| `GET /api/category-groups` | Category groups with `ListonicCategories` (id, order, image URL) |
+| `GET /api/subcategories` | `SubCategoryId`, `ListonicCategoryId`, `Name` |
+| `GET /api/featured-categories` | Featured categories |
+| `GET /api/product-hub`, `/api/product-hub/highlighted` | Product catalog; highlighted has `HighlightedType` (e.g. `Trending`) and `ProductId` |
+| `GET /api/notifications` | Notification preferences (email, news, sharing, market) |
+| `GET /api/rewards/user` | `{"Coins":0,"Stickers":[],"Rewards":[],"TimeLimitedRewards":[]}` |
+| `GET /api/deals/offers/matches/{listId}` | Flyer offers matching list items (array) |
+| `GET /api/deals/shops`, `/api/deals/shops/settings`, `/api/deals/promodeals/bytype` | Flyers and deals |
+| `GET /api/ad/prompter`, `/api/ad/cohorts` | Ad configuration, not useful for list management |
+| `POST /api/mobilestatus` | Device info (`Info`, `TimeZone`, `AdId`, `ConsentString`, `RegionCode`) sent after login |
+
+---
+
 ## Other Endpoints
 
 ### Get Prompter (Suggestions)

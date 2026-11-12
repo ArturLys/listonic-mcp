@@ -29,5 +29,11 @@ Repository = "https://github.com/ArturLys/listonic-mcp"
 [project.scripts]
 listonic-mcp = "listonic_mcp:main"
 
-[tool.setuptools]
-py-modules = ["listonic_mcp"]
+[dependency-groups]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+include = ["listonic_mcp*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

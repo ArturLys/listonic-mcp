@@ -18,6 +18,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install package
         run: pip install .
+      - name: Tests
+        run: pip install pytest && pytest -q
       - name: Import check
         run: python -c "import listonic_mcp"
       - name: CLI boots keyless
